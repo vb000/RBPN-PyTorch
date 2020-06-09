@@ -6,6 +6,7 @@ from os import listdir
 from os.path import join
 from PIL import Image, ImageOps
 import random
+import cv2
 import pyflow
 from skimage import img_as_float
 from random import randrange
@@ -90,6 +91,7 @@ def load_img_future(filepath, nFrames, scale, other_dataset):
     return target, input, neigbor, neigbor_hd
 
 def get_flow(im1, im2):
+    """
     im1 = np.array(im1)
     im1 = im1.reshape((im1.shape[0], im1.shape[1], 1))
     im2 = np.array(im2)
@@ -109,7 +111,11 @@ def get_flow(im1, im2):
 
     u, v, im2W = pyflow.coarse2fine_flow(im1, im2, alpha, ratio, minWidth, nOuterFPIterations, nInnerFPIterations,nSORIterations, colType)
     flow = np.concatenate((u[..., None], v[..., None]), axis=2)
-    #flow = rescale_flow(flow,0,1)
+    """
+    im1 = np.array(im1)
+    im2 = np.array(im2)
+    flow = cv2.calcOpticalFlowFarneback(im1, im2, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+
     return flow
 
 def rescale_flow(x,max_range,min_range):
@@ -202,10 +208,13 @@ class DatasetFromFolder(data.Dataset):
             target, input, neigbor, neigbor_hd = load_img_future(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
         else:
             target, input, neigbor, neigbor_hd = load_img(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
+        try:
+            if self.patch_size != 0:
+                input, target, neigbor, neigbor_hd, _ = get_patch(input,target,neigbor,neigbor_hd, self.patch_size, self.upscale_factor, self.nFrames)
+        except:
+            print("Error in file: " + self.image_filenames[index])
+            sys.exit(-1)
 
-        if self.patch_size != 0:
-            input, target, neigbor, neigbor_hd, _ = get_patch(input,target,neigbor,neigbor_hd, self.patch_size, self.upscale_factor, self.nFrames)
-        
         if self.data_augmentation:
             input, target, neigbor, neigbor_hd, _ = augment(input, target, neigbor, neigbor_hd)
             
