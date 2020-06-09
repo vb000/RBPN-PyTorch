@@ -7,7 +7,6 @@ from os.path import join
 from PIL import Image, ImageOps
 import random
 import cv2
-import pyflow
 from skimage import img_as_float
 from random import randrange
 import os.path
@@ -91,27 +90,6 @@ def load_img_future(filepath, nFrames, scale, other_dataset):
     return target, input, neigbor, neigbor_hd
 
 def get_flow(im1, im2):
-    """
-    im1 = np.array(im1)
-    im1 = im1.reshape((im1.shape[0], im1.shape[1], 1))
-    im2 = np.array(im2)
-    im2 = im2.reshape((im2.shape[0], im2.shape[1], 1))
-    im1 = im1.astype(float) / 255.
-    im2 = im2.astype(float) / 255.
-    
-    # Flow Options:
-    alpha = 0.012
-    ratio = 0.75
-    minWidth = 20
-    nOuterFPIterations = 7
-    nInnerFPIterations = 1
-    nSORIterations = 30
-    colType = 1  # 0 or default:RGB, 1:GRAY (but pass gray image with shape (h,w,1))
-    # print(im1.shape)
-
-    u, v, im2W = pyflow.coarse2fine_flow(im1, im2, alpha, ratio, minWidth, nOuterFPIterations, nInnerFPIterations,nSORIterations, colType)
-    flow = np.concatenate((u[..., None], v[..., None]), axis=2)
-    """
     im1 = np.array(im1)
     im2 = np.array(im2)
     flow = cv2.calcOpticalFlowFarneback(im1, im2, None, 0.5, 3, 15, 3, 5, 1.2, 0)
