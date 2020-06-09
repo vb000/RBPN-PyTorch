@@ -25,7 +25,7 @@ parser.add_argument('--nEpochs', type=int, default=150, help='number of epochs t
 parser.add_argument('--snapshots', type=int, default=5, help='Snapshots')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning Rate. Default=0.01')
 parser.add_argument('--gpu_mode', type=bool, default=True)
-parser.add_argument('--threads', type=int, default=8, help='number of threads for data loader to use')
+parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
 parser.add_argument('--gpus', default=2, type=int, help='number of gpu')
 parser.add_argument('--data_dir', type=str, default='./vimeo_septuplet/sequences')
@@ -105,7 +105,7 @@ training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, ba
 
 print('===> Building model ', opt.model_type)
 if opt.model_type == 'RBPN':
-    model = RBPN(num_channels=3, base_filter=256,  feat = 64, num_stages=3, n_resblock=5, nFrames=opt.nFrames, scale_factor=opt.upscale_factor) 
+    model = RBPN(num_channels=1, base_filter=256,  feat = 64, num_stages=3, n_resblock=5, nFrames=opt.nFrames, scale_factor=opt.upscale_factor)
 
 model = torch.nn.DataParallel(model, device_ids=gpus_list)
 criterion = nn.L1Loss()

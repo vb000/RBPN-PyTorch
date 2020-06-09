@@ -28,7 +28,7 @@ class Net(nn.Module):
         
         #Initial Feature Extraction
         self.feat0 = ConvBlock(num_channels, base_filter, 3, 1, 1, activation='prelu', norm=None)
-        self.feat1 = ConvBlock(8, base_filter, 3, 1, 1, activation='prelu', norm=None)
+        self.feat1 = ConvBlock(4, base_filter, 3, 1, 1, activation='prelu', norm=None)
 
         ###DBPNS
         self.DBPN = DBPNS(base_filter, feat, num_stages, scale_factor)

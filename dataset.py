@@ -19,7 +19,7 @@ def load_img(filepath, nFrames, scale, other_dataset):
     seq = [i for i in range(1, nFrames)]
     #random.shuffle(seq) #if random sequence
     if other_dataset:
-        target = modcrop(Image.open(filepath).convert('RGB'),scale)
+        target = modcrop(Image.open(filepath).convert('LA'),scale)
         input=target.resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
         
         char_len = len(filepath)
@@ -31,7 +31,7 @@ def load_img(filepath, nFrames, scale, other_dataset):
             file_path = re.search('(.*)frame', filepath).group(1)
             file_name = file_path + 'frame{0}'.format(index) + '.jpg'
             if os.path.exists(file_name):
-                temp = modcrop(Image.open(filepath[0:char_len-7]+'{0:03d}'.format(index)+'.png').convert('RGB'),scale).resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
+                temp = modcrop(Image.open(file_name).convert('L'),scale).resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
                 neigbor.append(temp)
             else:
                 print('neigbor frame is not exist')
@@ -47,7 +47,7 @@ def load_img(filepath, nFrames, scale, other_dataset):
 def load_img_future(filepath, nFrames, scale, other_dataset):
     tt = int(nFrames/2)
     if other_dataset:
-        target = modcrop(Image.open(filepath).convert('RGB'),scale)
+        target = modcrop(Image.open(filepath).convert('L'),scale)
         input = target.resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
         
         char_len = len(filepath)
@@ -63,7 +63,8 @@ def load_img_future(filepath, nFrames, scale, other_dataset):
             file_path1 = re.search('(.*)frame', filepath).group(1)
             file_name1=file_path1+'frame{0}'.format(index1)+'.jpg'
             if os.path.exists(file_name1):
-                temp = modcrop(Image.open(file_name1).convert('RGB'), scale).resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
+
+                temp = modcrop(Image.open(file_name1).convert('L'), scale).resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
                 neigbor.append(temp)
             else:
                 print('neigbor frame- is not exist')
@@ -82,7 +83,9 @@ def load_img_future(filepath, nFrames, scale, other_dataset):
 
 def get_flow(im1, im2):
     im1 = np.array(im1)
+    im1 = im1.reshape((im1.shape[0], im1.shape[1], 1))
     im2 = np.array(im2)
+    im2 = im2.reshape((im2.shape[0], im2.shape[1], 1))
     im1 = im1.astype(float) / 255.
     im2 = im2.astype(float) / 255.
     
@@ -93,8 +96,9 @@ def get_flow(im1, im2):
     nOuterFPIterations = 7
     nInnerFPIterations = 1
     nSORIterations = 30
-    colType = 0  # 0 or default:RGB, 1:GRAY (but pass gray image with shape (h,w,1))
-    
+    colType = 1  # 0 or default:RGB, 1:GRAY (but pass gray image with shape (h,w,1))
+    # print(im1.shape)
+
     u, v, im2W = pyflow.coarse2fine_flow(im1, im2, alpha, ratio, minWidth, nOuterFPIterations, nInnerFPIterations,nSORIterations, colType)
     flow = np.concatenate((u[..., None], v[..., None]), axis=2)
     #flow = rescale_flow(flow,0,1)
@@ -182,7 +186,6 @@ class DatasetFromFolder(data.Dataset):
         self.future_frame = future_frame
 
     def __getitem__(self, index):
-        print(self.image_filenames[index])
         if self.future_frame:
 
             target, input, neigbor = load_img_future(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
