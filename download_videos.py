@@ -1,21 +1,25 @@
-# import os
+#!/usr/bin/env python3
 
-# os.system("cd ~/ssds/Downloads/videos")
-# video_id = 0
-# os.system("youtube-dl -a video_list.txt -i")
-
+# First download videos into videos directory with:
+# cd videos/
+# youtube-dl -a video_list.txt -i
 
 import numpy as np 
 import glob, os
-os.chdir("/home/zoey/ssds/Downloads/cse599")
+import sys
 import cv2
 
+if len(sys.argv) < 2:
+	wd = os.getcwd()
+else:
+	wd = sys.argv[1]
+
 vid = 0
-for video_path in glob.glob("*.mp4"):
+for video_path in glob.glob(os.path.join(wd, "videos/*.mp4")):
 	# downsample a video
 	print("now processing video: ", video_path)
-	save_gray_path = "/home/zoey/ssds/Downloads/gray_scale/{0}".format(vid)
-	save_HD_path = "/home/zoey/ssds/Downloads/HD/{0}".format(vid)
+	save_gray_path = os.path.join(wd, "gray_scale/{0}".format(vid))
+	save_HD_path = os.path.join(wd, "HD/{0}".format(vid))
 	if not os.path.exists(save_gray_path):
 		os.makedirs(save_gray_path)
 	if not os.path.exists(save_HD_path):
