@@ -27,10 +27,10 @@ parser.add_argument('--lr', type=float, default=1e-4, help='Learning Rate. Defau
 parser.add_argument('--gpu_mode', type=bool, default=True)
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
-parser.add_argument('--gpus', default=2, type=int, help='number of gpu')
+parser.add_argument('--gpus', default=1, type=int, help='number of gpu')
 parser.add_argument('--data_dir', type=str, default='./vimeo_septuplet/sequences')
 parser.add_argument('--file_list', type=str, default='sep_trainlist.txt')
-parser.add_argument('--other_dataset', type=bool, default=False, help="use other dataset than vimeo-90k")
+parser.add_argument('--other_dataset', type=bool, default=True, help="use other dataset than vimeo-90k")
 parser.add_argument('--future_frame', type=bool, default=False, help="use future frame")
 parser.add_argument('--nFrames', type=int, default=2)
 parser.add_argument('--patch_size', type=int, default=64, help='0 to use original frame size')
@@ -48,10 +48,15 @@ hostname = str(socket.gethostname())
 cudnn.benchmark = False
 print(opt)
 
+EPOCH_SIZE = 100
 def train(epoch):
     epoch_loss = 0
     model.train()
     for iteration, batch in enumerate(training_data_loader, 1):
+        if iteration < (epoch-1) * EPOCH_SIZE:
+            continue
+        if iteration > (epoch) * EPOCH_SIZE:
+            break
         input, target, neigbor, neigbor_hd, flow, bicubic = batch[0], batch[1], batch[2], batch[3], batch[4], batch[5]
         if cuda:
             input = Variable(input).cuda(gpus_list[0])

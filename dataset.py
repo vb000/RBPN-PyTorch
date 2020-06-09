@@ -24,6 +24,7 @@ def load_img(filepath, nFrames, scale, other_dataset):
         
         char_len = len(filepath)
         neigbor=[]
+        neigbor_hd = []
 
         for i in seq:
             # index = int(filepath[char_len-7:char_len-4])-i
@@ -198,9 +199,9 @@ class DatasetFromFolder(data.Dataset):
 
     def __getitem__(self, index):
         if self.future_frame:
-            target, input, neigbor = load_img_future(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
+            target, input, neigbor, neigbor_hd = load_img_future(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
         else:
-            target, input, neigbor = load_img(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
+            target, input, neigbor, neigbor_hd = load_img(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
 
         if self.patch_size != 0:
             input, target, neigbor, neigbor_hd, _ = get_patch(input,target,neigbor,neigbor_hd, self.patch_size, self.upscale_factor, self.nFrames)
