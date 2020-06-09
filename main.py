@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, RandomSampler
 from rbpn import Net as RBPN
 from data import get_training_set, get_eval_set
 import pdb
@@ -41,6 +41,7 @@ parser.add_argument('--pretrained_sr', default='4x_tiktokRBPNF7_epoch_4.pth', he
 parser.add_argument('--pretrained', type=bool, default=True)
 parser.add_argument('--save_folder', default='weights/', help='Location to save checkpoint models')
 parser.add_argument('--prefix', default='F7', help='Location to save checkpoint models')
+parser.add_argument('--epoch_size', type=int, default=200, help='Size of each epoch')
 
 opt = parser.parse_args()
 gpus_list = range(opt.gpus)
@@ -48,15 +49,10 @@ hostname = str(socket.gethostname())
 cudnn.benchmark = False
 print(opt)
 
-EPOCH_SIZE = 100
 def train(epoch):
     epoch_loss = 0
     model.train()
     for iteration, batch in enumerate(training_data_loader, 1):
-        if iteration < (epoch-1) * EPOCH_SIZE:
-            continue
-        if iteration > (epoch) * EPOCH_SIZE:
-            break
         input, target, neigbor, neigbor_hd, flow, bicubic = batch[0], batch[1], batch[2], batch[3], batch[4], batch[5]
         if cuda:
             input = Variable(input).cuda(gpus_list[0])
@@ -104,7 +100,7 @@ if cuda:
     torch.cuda.manual_seed(opt.seed)
 
 print('===> Loading datasets')
-train_set = get_training_set(opt.data_dir, opt.nFrames, opt.upscale_factor, opt.data_augmentation, opt.file_list, opt.other_dataset, opt.patch_size, opt.future_frame)
+train_set = get_training_set(opt.data_dir, opt.nFrames, opt.upscale_factor, opt.data_augmentation, opt.file_list, opt.other_dataset, opt.patch_size, opt.future_frame, opt.epoch_size)
 #test_set = get_eval_set(opt.test_dir, opt.nFrames, opt.upscale_factor, opt.data_augmentation)
 training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True)
 #testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=False)
@@ -140,10 +136,10 @@ for epoch in range(opt.start_epoch, opt.nEpochs + 1):
     #test()
 
     # learning rate is decayed by a factor of 10 every half of total epochs
-    if (epoch+1) % (opt.nEpochs/2) == 0:
+    if epoch % (opt.nEpochs/2) == 0:
         for param_group in optimizer.param_groups:
             param_group['lr'] /= 10.0
         print('Learning rate decay: lr={}'.format(optimizer.param_groups[0]['lr']))
             
-    if (epoch+1) % (opt.snapshots) == 0:
+    if epoch % (opt.snapshots) == 0:
         checkpoint(epoch)

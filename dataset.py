@@ -173,7 +173,7 @@ def rescale_img(img_in, scale):
     return img_in
 
 class DatasetFromFolder(data.Dataset):
-    def __init__(self, image_dir,nFrames, upscale_factor, data_augmentation, file_list, other_dataset, patch_size, future_frame, transform=None):
+    def __init__(self, image_dir,nFrames, upscale_factor, data_augmentation, file_list, other_dataset, patch_size, future_frame, transform=None, epoch_size=None):
         super(DatasetFromFolder, self).__init__()
         # alist = [line.rstrip() for line in open(join(image_dir,file_list))]
         # self.image_filenames = [join(image_dir,x) for x in alist]
@@ -187,8 +187,15 @@ class DatasetFromFolder(data.Dataset):
         self.other_dataset = other_dataset
         self.patch_size = patch_size
         self.future_frame = future_frame
+        self.epoch_size = epoch_size
+        if epoch_size is None:
+            self.epoch_size = len(self.image_filenames)
 
     def __getitem__(self, index):
+        if self.epoch_size != len(self.image_filenames):
+            # Ignore, choose random
+            index = np.random.randint(len(self.image_filenames))
+
         if self.future_frame:
             target, input, neigbor, neigbor_hd = load_img_future(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
         else:
@@ -218,10 +225,10 @@ class DatasetFromFolder(data.Dataset):
         return input, target, neigbor, neigbor_hd, flow, bicubic
 
     def __len__(self):
-        return len(self.image_filenames)
+        return self.epoch_size
 
 class DatasetFromFolderTest(data.Dataset):
-    def __init__(self, image_dir, nFrames, upscale_factor, file_list, other_dataset, future_frame, transform=None):
+    def __init__(self, image_dir, nFrames, upscale_factor, file_list, other_dataset, future_frame, transform=None, epoch_size=None):
         super(DatasetFromFolderTest, self).__init__()
         # alist = [line.rstrip() for line in open(join(image_dir,file_list))]
         # self.image_filenames = [join(image_dir,x) for x in alist]
@@ -231,8 +238,15 @@ class DatasetFromFolderTest(data.Dataset):
         self.transform = transform
         self.other_dataset = other_dataset
         self.future_frame = future_frame
+        self.epoch_size = epoch_size
+        if epoch_size is None:
+            self.epoch_size = len(self.image_filenames)
 
     def __getitem__(self, index):
+        if self.epoch_size != len(self.image_filenames):
+            # Ignore, choose random
+            index = np.random.randint(len(self.image_filenames))
+
         if self.future_frame:
             target, input, neigbor, neigbor_hd = load_img_future(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
         else:
@@ -253,4 +267,4 @@ class DatasetFromFolderTest(data.Dataset):
         return input, target, neigbor, neigbor_hd, flow, bicubic
       
     def __len__(self):
-        return len(self.image_filenames)
+        return self.epoch_size
