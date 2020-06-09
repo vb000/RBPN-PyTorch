@@ -12,6 +12,8 @@ from random import randrange
 import os.path
 import glob
 import re
+import sys
+
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in [".png", ".jpg", ".jpeg"])
 
@@ -115,11 +117,16 @@ def get_patch(img_in, img_tar, img_nn, img_nn_hd, patch_size, scale, nFrames, ix
     patch_mult = scale #if len(scale) > 1 else 1
     tp = patch_mult * patch_size
     ip = tp // scale
-
-    if ix == -1:
-        ix = random.randrange(0, iw - ip + 1)
-    if iy == -1:
-        iy = random.randrange(0, ih - ip + 1)
+    try:
+        if ix == -1:
+            ix = random.randrange(0, iw - ip + 1)
+        if iy == -1:
+            iy = random.randrange(0, ih - ip + 1)
+    except:
+        print(ip)
+        print(iw)
+        print(ih)
+        blah.blah
 
     (tx, ty) = (scale * ix, scale * iy)
 

@@ -37,8 +37,8 @@ parser.add_argument('--patch_size', type=int, default=64, help='0 to use origina
 parser.add_argument('--data_augmentation', type=bool, default=True)
 parser.add_argument('--model_type', type=str, default='RBPN')
 parser.add_argument('--residual', type=bool, default=False)
-parser.add_argument('--pretrained_sr', default='3x_dl10VDBPNF7_epoch_84.pth', help='sr pretrained base model')
-parser.add_argument('--pretrained', type=bool, default=False)
+parser.add_argument('--pretrained_sr', default='4x_tiktokRBPNF7_epoch_4.pth', help='sr pretrained base model')
+parser.add_argument('--pretrained', type=bool, default=True)
 parser.add_argument('--save_folder', default='weights/', help='Location to save checkpoint models')
 parser.add_argument('--prefix', default='F7', help='Location to save checkpoint models')
 
@@ -81,7 +81,7 @@ def train(epoch):
 
         print("===> Epoch[{}]({}/{}): Loss: {:.4f} || Timer: {:.4f} sec.".format(epoch, iteration, len(training_data_loader), loss.item(), (t1 - t0)))
 
-    print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / len(training_data_loader)))
+    print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / EPOCH_SIZE))
 
 def print_network(net):
     num_params = 0
@@ -117,7 +117,7 @@ model = torch.nn.DataParallel(model, device_ids=gpus_list)
 criterion = nn.L1Loss()
 
 print('---------- Networks architecture -------------')
-print_network(model)
+#print_network(model)
 print('----------------------------------------------')
 
 if opt.pretrained:
@@ -126,6 +126,8 @@ if opt.pretrained:
         #model= torch.load(model_name, map_location=lambda storage, loc: storage)
         model.load_state_dict(torch.load(model_name, map_location=lambda storage, loc: storage))
         print('Pre-trained SR model is loaded.')
+    else:
+        print("Could not load pre-trained model")
 
 if cuda:
     model = model.cuda(gpus_list[0])
