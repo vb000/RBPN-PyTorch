@@ -31,8 +31,8 @@ parser.add_argument('--gpus', default=2, type=int, help='number of gpu')
 parser.add_argument('--data_dir', type=str, default='./vimeo_septuplet/sequences')
 parser.add_argument('--file_list', type=str, default='sep_trainlist.txt')
 parser.add_argument('--other_dataset', type=bool, default=False, help="use other dataset than vimeo-90k")
-parser.add_argument('--future_frame', type=bool, default=True, help="use future frame")
-parser.add_argument('--nFrames', type=int, default=7)
+parser.add_argument('--future_frame', type=bool, default=False, help="use future frame")
+parser.add_argument('--nFrames', type=int, default=2)
 parser.add_argument('--patch_size', type=int, default=64, help='0 to use original frame size')
 parser.add_argument('--data_augmentation', type=bool, default=True)
 parser.add_argument('--model_type', type=str, default='RBPN')
@@ -52,17 +52,18 @@ def train(epoch):
     epoch_loss = 0
     model.train()
     for iteration, batch in enumerate(training_data_loader, 1):
-        input, target, neigbor, flow, bicubic = batch[0], batch[1], batch[2], batch[3], batch[4]
+        input, target, neigbor, neigbor_hd, flow, bicubic = batch[0], batch[1], batch[2], batch[3], batch[4], batch[5]
         if cuda:
             input = Variable(input).cuda(gpus_list[0])
             target = Variable(target).cuda(gpus_list[0])
             bicubic = Variable(bicubic).cuda(gpus_list[0])
             neigbor = [Variable(j).cuda(gpus_list[0]) for j in neigbor]
+            neigbor_hd = [Variable(j).cuda(gpus_list[0]) for j in neigbor_hd]
             flow = [Variable(j).cuda(gpus_list[0]).float() for j in flow]
 
         optimizer.zero_grad()
         t0 = time.time()
-        prediction = model(input, neigbor, flow)
+        prediction = model(input, neigbor, neigbor_hd, flow)
         
         if opt.residual:
             prediction = prediction + bicubic

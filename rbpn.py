@@ -55,7 +55,7 @@ class Net(nn.Module):
         self.res_feat3 = nn.Sequential(*modules_body3)
         
         #Reconstruction
-        self.output = ConvBlock((nFrames-1)*feat, num_channels, 3, 1, 1, activation=None, norm=None)
+        self.output = ConvBlock((nFrames-1)*(feat + base_filter), num_channels, 3, 1, 1, activation=None, norm=None)
         
         for m in self.modules():
             classname = m.__class__.__name__
@@ -68,12 +68,14 @@ class Net(nn.Module):
         	    if m.bias is not None:
         		    m.bias.data.zero_()
             
-    def forward(self, x, neigbor, flow):
+    def forward(self, x, neigbor, neigbor_hd, flow):
         ### initial feature extraction
         feat_input = self.feat0(x)
+        feat_hd = []
         feat_frame=[]
         for j in range(len(neigbor)):
             feat_frame.append(self.feat1(torch.cat((x, neigbor[j], flow[j]),1)))
+            feat_hd.append(self.feat0(neigbor_hd[j]))
         
         ####Projection
         Ht = []
@@ -85,6 +87,7 @@ class Net(nn.Module):
             e = self.res_feat2(e)
             h = h0+e
             Ht.append(h)
+            Ht.append(feat_hd[j])
             feat_input = self.res_feat3(h)
         
         ####Reconstruction
