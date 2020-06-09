@@ -10,7 +10,8 @@ import pyflow
 from skimage import img_as_float
 from random import randrange
 import os.path
-
+import glob
+import re
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in [".png", ".jpg", ".jpeg"])
 
@@ -25,9 +26,10 @@ def load_img(filepath, nFrames, scale, other_dataset):
         neigbor=[]
 
         for i in seq:
-            index = int(filepath[char_len-7:char_len-4])-i
-            file_name=filepath[0:char_len-7]+'{0:03d}'.format(index)+'.png'
-            
+            # index = int(filepath[char_len-7:char_len-4])-i
+            index = int(re.search('frame(.*).jpg', filepath).group(1))-i
+            file_path = re.search('(.*)frame', filepath).group(1)
+            file_name = file_path + 'frame{0}'.format(index) + '.jpg'
             if os.path.exists(file_name):
                 temp = modcrop(Image.open(filepath[0:char_len-7]+'{0:03d}'.format(index)+'.png').convert('RGB'),scale).resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
                 neigbor.append(temp)
@@ -56,9 +58,10 @@ def load_img_future(filepath, nFrames, scale, other_dataset):
             seq = [x for x in range(-tt,tt+1) if x!=0]
         #random.shuffle(seq) #if random sequence
         for i in seq:
-            index1 = int(filepath[char_len-7:char_len-4])+i
-            file_name1=filepath[0:char_len-7]+'{0:03d}'.format(index1)+'.png'
-            
+            index1 = int(re.search('frame(.*).jpg', filepath).group(1))+i
+            # index1 = int(filepath[-7:char_len-4])+i
+            file_path1 = re.search('(.*)frame', filepath).group(1)
+            file_name1=file_path1+'frame{0}'.format(index1)+'.jpg'
             if os.path.exists(file_name1):
                 temp = modcrop(Image.open(file_name1).convert('RGB'), scale).resize((int(target.size[0]/scale),int(target.size[1]/scale)), Image.BICUBIC)
                 neigbor.append(temp)
@@ -165,8 +168,11 @@ def rescale_img(img_in, scale):
 class DatasetFromFolder(data.Dataset):
     def __init__(self, image_dir,nFrames, upscale_factor, data_augmentation, file_list, other_dataset, patch_size, future_frame, transform=None):
         super(DatasetFromFolder, self).__init__()
-        alist = [line.rstrip() for line in open(join(image_dir,file_list))]
-        self.image_filenames = [join(image_dir,x) for x in alist]
+        # alist = [line.rstrip() for line in open(join(image_dir,file_list))]
+        # self.image_filenames = [join(image_dir,x) for x in alist]
+        # print(image_dir+"/**/*.jpg")
+        self.image_filenames = glob.glob(image_dir + '/**/*.jpg', recursive=True)
+        # print(self.image_filenames)
         self.nFrames = nFrames
         self.upscale_factor = upscale_factor
         self.transform = transform
@@ -176,7 +182,9 @@ class DatasetFromFolder(data.Dataset):
         self.future_frame = future_frame
 
     def __getitem__(self, index):
+        print(self.image_filenames[index])
         if self.future_frame:
+
             target, input, neigbor = load_img_future(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
         else:
             target, input, neigbor = load_img(self.image_filenames[index], self.nFrames, self.upscale_factor, self.other_dataset)
@@ -206,8 +214,9 @@ class DatasetFromFolder(data.Dataset):
 class DatasetFromFolderTest(data.Dataset):
     def __init__(self, image_dir, nFrames, upscale_factor, file_list, other_dataset, future_frame, transform=None):
         super(DatasetFromFolderTest, self).__init__()
-        alist = [line.rstrip() for line in open(join(image_dir,file_list))]
-        self.image_filenames = [join(image_dir,x) for x in alist]
+        # alist = [line.rstrip() for line in open(join(image_dir,file_list))]
+        # self.image_filenames = [join(image_dir,x) for x in alist]
+        self.image_filenames = glob.glob(join(image_dir,"**/*.png"))
         self.nFrames = nFrames
         self.upscale_factor = upscale_factor
         self.transform = transform
