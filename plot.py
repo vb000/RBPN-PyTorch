@@ -30,6 +30,7 @@ parser.add_argument('--model_type', type=str, default='RBPN')
 parser.add_argument('--residual', type=bool, default=False)
 parser.add_argument('--output', default='Results/', help='Location to images and plots')
 parser.add_argument('--model', default='weights/4x_tiktokRBPNF7_epoch_250.pth', help='sr pretrained base model')
+parser.add_argument('--reset_hd', type=int, default=0, help='how often to reset HD frame')
 
 opt = parser.parse_args()
 
@@ -153,7 +154,7 @@ def PSNR(pred, gt, shave_border=0):
         return 100
     return 20 * math.log10(255.0 / rmse)
 
-def processVideo(folder, start, resetHD=None):
+def processVideo(folder, start):
     psnrs = []
 
     # Initial Variables
@@ -170,6 +171,10 @@ def processVideo(folder, start, resetHD=None):
     pred = None
     imgFile = os.path.join(folder, "frame%s.jpg" % str(current))
     while os.path.exists(imgFile):
+        if opt.reset_hd > 0:
+            if current % opt.reset_hd == 0:
+                print("Reseting HD Frame")
+                pred = None
         pred, psnr = processFrame(imgFile, pred)
         psnrs.append(psnr)
         if psnr < -250:
@@ -205,7 +210,7 @@ def main():
         plt.plot(t, psnrs)
         plt.title("SNR Decay, Video %d" % int(num))
         plt.xlabel("Frame After HD")
-        plt.ylabel("Peak SNR")
+        plt.ylabel("Peak SNR (dB)")
         plt.show()
 
 if __name__ == '__main__':
