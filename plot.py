@@ -5,7 +5,7 @@ import os
 import torch
 from torch.autograd import Variable
 from rbpn import Net as RBPN
-from dataset import load_img, get_flow
+from dataset import load_img, get_flow, rescale_img
 from data import transform
 import numpy as np
 
@@ -66,10 +66,12 @@ def processFrame(imgFile, hdOverride = None):
     # Load image and optical flow
     target, input, neigbor, neigbor_hd = load_img(imgFile, opt.nFrames, opt.upscale_factor, True)
     flow = [get_flow(input,j) for j in neigbor]
+    bicubic = rescale_img(input, opt.upscale_factor)
 
     # Convert to Torch
     target = transform()(target)
     input = transform()(input)
+    bicubic = transform()(bicubic)
     neigbor = [transform()(j) for j in neigbor]
     neigbor_hd = [transform()(j) for j in neigbor_hd]
     flow = [torch.from_numpy(j.transpose(2,0,1)) for j in flow]
@@ -88,6 +90,7 @@ def processFrame(imgFile, hdOverride = None):
 
     # Reshape for model
     input = input.unsqueeze(0)
+    bicubic = bicubic.unsqueeze(0)
     target = target.unsqueeze(0)
     neigbor[0] = neigbor[0].unsqueeze(0)
     neigbor_hd[0] = neigbor_hd[0].unsqueeze(0)
@@ -116,11 +119,15 @@ def processFrame(imgFile, hdOverride = None):
         
     target = target.squeeze().numpy().astype(np.float32)
     target = target*255.
+
+    bicubic = bicubic.squeeze().numpy().astype(np.float32)
+    bicubic = bicubic*255.
                 
     psnr = PSNR(prediction, target, shave_border=opt.upscale_factor)
+    base = PSNR(bicubic, target, shave_border=opt.upscale_factor)
 
-    print("===> Processing: %s || Timer: %.4f sec. || PSNR: %.4f" % (imgFile, (t1 - t0), psnr))
-    return ret, psnr
+    print("===> Processing: %s || Timer: %.4f sec. || PSNR: %.4f || Base: %.4f" % (imgFile, (t1 - t0), psnr, base))
+    return ret, psnr, base
 
 def save_img(img, img_path, subfolder):
 
@@ -156,6 +163,7 @@ def PSNR(pred, gt, shave_border=0):
 
 def processVideo(folder, start):
     psnrs = []
+    bases = []
 
     # Initial Variables
     current = start
@@ -164,7 +172,7 @@ def processVideo(folder, start):
         return []
 
     # Save first frame, assume PSNR is perfect
-    _, _ = processFrame(imgFile, None)
+    _, _, _ = processFrame(imgFile, None)
 
     # Loop through subsequent frames
     current += 1
@@ -175,15 +183,16 @@ def processVideo(folder, start):
             if current % opt.reset_hd == 0:
                 print("Reseting HD Frame")
                 pred = None
-        pred, psnr = processFrame(imgFile, pred)
+        pred, psnr, base = processFrame(imgFile, pred)
         psnrs.append(psnr)
+        bases.append(base)
         if psnr < -250:
             print("PSNR too bad, breaking")
             break
         current += 1
         imgFile = os.path.join(folder, "frame%s.jpg" % str(current))
 
-    return psnrs
+    return psnrs, bases
 
 def main():
     print("----------------")
@@ -202,15 +211,17 @@ def main():
         # Get starting frame
         start = int(input("Enter starting frame #: "))
 
-        psnrs = processVideo(folder, start)
+        psnrs, bases = processVideo(folder, start)
 
         # Plot PSNRs
         print("Plotting PSNR")
         t = np.arange(len(psnrs)) + 1
-        plt.plot(t, psnrs)
+        plt.plot(t, psnrs, 'r', label="Model")
+        plt.plot(t, bases, 'k', label="Bicubic")
         plt.title("SNR Decay, Video %d" % int(num))
         plt.xlabel("Frame After HD")
         plt.ylabel("Peak SNR (dB)")
+        plt.legend()
         plt.show()
 
 if __name__ == '__main__':
