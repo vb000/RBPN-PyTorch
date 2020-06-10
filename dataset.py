@@ -232,7 +232,7 @@ class DatasetFromFolderTest(data.Dataset):
         super(DatasetFromFolderTest, self).__init__()
         # alist = [line.rstrip() for line in open(join(image_dir,file_list))]
         # self.image_filenames = [join(image_dir,x) for x in alist]
-        self.image_filenames = glob.glob(join(image_dir,"**/*.png"))
+        self.image_filenames = glob.glob(image_dir + '/**/*.jpg', recursive=True)
         self.nFrames = nFrames
         self.upscale_factor = upscale_factor
         self.transform = transform
@@ -264,7 +264,7 @@ class DatasetFromFolderTest(data.Dataset):
             neigbor_hd = [self.transform(j) for j in neigbor_hd]
             flow = [torch.from_numpy(j.transpose(2,0,1)) for j in flow]
             
-        return input, target, neigbor, neigbor_hd, flow, bicubic
+        return input, target, neigbor, neigbor_hd, flow, bicubic, self.image_filenames[index]
       
     def __len__(self):
         return self.epoch_size

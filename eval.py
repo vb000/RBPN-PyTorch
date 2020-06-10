@@ -18,6 +18,7 @@ import time
 import cv2
 import math
 import pdb
+import re
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch Super Res Example')
@@ -32,11 +33,11 @@ parser.add_argument('--data_dir', type=str, default='./Vid4')
 parser.add_argument('--file_list', type=str, default='foliage.txt')
 parser.add_argument('--other_dataset', type=bool, default=True, help="use other dataset than vimeo-90k")
 parser.add_argument('--future_frame', type=bool, default=True, help="use future frame")
-parser.add_argument('--nFrames', type=int, default=7)
+parser.add_argument('--nFrames', type=int, default=2)
 parser.add_argument('--model_type', type=str, default='RBPN')
 parser.add_argument('--residual', type=bool, default=False)
 parser.add_argument('--output', default='Results/', help='Location to save checkpoint models')
-parser.add_argument('--model', default='weights/RBPN_4x.pth', help='sr pretrained base model')
+parser.add_argument('--model', default='weights/4x_tiktokRBPNF7_epoch_250.pth', help='sr pretrained base model')
 
 opt = parser.parse_args()
 
@@ -57,7 +58,7 @@ testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batc
 
 print('===> Building model ', opt.model_type)
 if opt.model_type == 'RBPN':
-    model = RBPN(num_channels=3, base_filter=256,  feat = 64, num_stages=3, n_resblock=5, nFrames=opt.nFrames, scale_factor=opt.upscale_factor)
+    model = RBPN(num_channels=1, base_filter=256,  feat = 64, num_stages=3, n_resblock=5, nFrames=opt.nFrames, scale_factor=opt.upscale_factor)
 
 if cuda:
     model = torch.nn.DataParallel(model, device_ids=gpus_list)
@@ -73,28 +74,29 @@ def eval():
     count=1
     avg_psnr_predicted = 0.0
     for batch in testing_data_loader:
-        input, target, neigbor, flow, bicubic = batch[0], batch[1], batch[2], batch[3], batch[4]
+        input, target, neigbor, neigbor_hd, flow, bicubic, img_name = batch[0], batch[1], batch[2], batch[3], batch[4], batch[5], batch[6]
         
         with torch.no_grad():
             input = Variable(input).cuda(gpus_list[0])
             bicubic = Variable(bicubic).cuda(gpus_list[0])
             neigbor = [Variable(j).cuda(gpus_list[0]) for j in neigbor]
+            neigbor_hd = [Variable(j).cuda(gpus_list[0]) for j in neigbor_hd]
             flow = [Variable(j).cuda(gpus_list[0]).float() for j in flow]
 
         t0 = time.time()
         if opt.chop_forward:
             with torch.no_grad():
-                prediction = chop_forward(input, neigbor, flow, model, opt.upscale_factor)
+                prediction = chop_forward(input, neigbor, neigbor_hd, flow, model, opt.upscale_factor)
         else:
             with torch.no_grad():
-                prediction = model(input, neigbor, flow) 
+                prediction = model(input, neigbor, neigbor_hd, flow)
         
         if opt.residual:
             prediction = prediction + bicubic
             
         t1 = time.time()
         print("===> Processing: %s || Timer: %.4f sec." % (str(count), (t1 - t0)))
-        save_img(prediction.cpu().data, str(count), True)
+        save_img(prediction.cpu().data, str(count),img_name, True)
         #save_img(target, str(count), False)
         
         #prediction=prediction.cpu()
@@ -107,22 +109,29 @@ def eval():
         #psnr_predicted = PSNR(prediction,target, shave_border=opt.upscale_factor)
         #avg_psnr_predicted += psnr_predicted
         count+=1
+        if count>60:
+            count=1
     
     #print("PSNR_predicted=", avg_psnr_predicted/count)
 
-def save_img(img, img_name, pred_flag):
-    save_img = img.squeeze().clamp(0, 1).numpy().transpose(1,2,0)
-
+def save_img(img, img_name, img_path, pred_flag):
+    # print(img.squeeze().clamp(0, 1).numpy().shape)
+    save_img = np.float32(img.squeeze().clamp(0, 1).numpy())#[:,:,np.newaxis]
     # save img
-    save_dir=os.path.join(opt.output, opt.data_dir, os.path.splitext(opt.file_list)[0]+'_'+str(opt.upscale_factor)+'x')
+    # get the folder name:
+    folder = str(re.search('test/(.*)/', img_path[0]).group(1))
+
+    save_dir=os.path.join(opt.output, folder)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         
     if pred_flag:
-        save_fn = save_dir +'/'+ img_name+'_'+opt.model_type+'F'+str(opt.nFrames)+'.png'
+        save_fn = save_dir +'/'+ "frame"+img_name+'.png'
     else:
         save_fn = save_dir +'/'+ img_name+'.png'
-    cv2.imwrite(save_fn, cv2.cvtColor(save_img*255, cv2.COLOR_BGR2RGB),  [cv2.IMWRITE_PNG_COMPRESSION, 0])
+    final_img = cv2.cvtColor(save_img, cv2.COLOR_GRAY2BGR)
+    print(np.max(save_img*255))
+    cv2.imwrite(save_fn,  save_img*255, [cv2.IMWRITE_PNG_COMPRESSION, 0])
 
 def PSNR(pred, gt, shave_border=0):
     height, width = pred.shape[:2]
