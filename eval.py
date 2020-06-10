@@ -12,7 +12,7 @@ from data import get_test_set
 from functools import reduce
 import numpy as np
 
-from scipy.misc import imsave
+import imageio
 import scipy.io as sio
 import time
 import cv2
@@ -32,7 +32,7 @@ parser.add_argument('--gpus', default=1, type=int, help='number of gpu')
 parser.add_argument('--data_dir', type=str, default='./Vid4')
 parser.add_argument('--file_list', type=str, default='foliage.txt')
 parser.add_argument('--other_dataset', type=bool, default=True, help="use other dataset than vimeo-90k")
-parser.add_argument('--future_frame', type=bool, default=True, help="use future frame")
+parser.add_argument('--future_frame', type=bool, default=False, help="use future frame")
 parser.add_argument('--nFrames', type=int, default=2)
 parser.add_argument('--model_type', type=str, default='RBPN')
 parser.add_argument('--residual', type=bool, default=False)
@@ -118,8 +118,8 @@ def save_img(img, img_path, pred_flag):
     save_img = np.float32(img.squeeze().clamp(0, 1).numpy())#[:,:,np.newaxis]
     # save img
     # get the folder name:
-    folder = str(re.search('test/(.*)/', img_path[0]).group(1))
-    name = str(re.search('frame(.*).', img_path[0]).group(1))
+    folder = os.path.basename(os.path.dirname(img_path[0]))
+    name = str(re.search('frame(.*)\.', os.path.basename(img_path[0])).group(1))
 
     save_dir=os.path.join(opt.output, folder)
     if not os.path.exists(save_dir):
