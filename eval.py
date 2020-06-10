@@ -96,7 +96,7 @@ def eval():
             
         t1 = time.time()
         print("===> Processing: %s || Timer: %.4f sec." % (str(count), (t1 - t0)))
-        save_img(prediction.cpu().data, str(count),img_name, True)
+        save_img(prediction.cpu().data, img_name, True)
         #save_img(target, str(count), False)
         
         #prediction=prediction.cpu()
@@ -109,28 +109,28 @@ def eval():
         #psnr_predicted = PSNR(prediction,target, shave_border=opt.upscale_factor)
         #avg_psnr_predicted += psnr_predicted
         count+=1
-        if count>60:
-            count=1
+
     
     #print("PSNR_predicted=", avg_psnr_predicted/count)
 
-def save_img(img, img_name, img_path, pred_flag):
+def save_img(img, img_path, pred_flag):
     # print(img.squeeze().clamp(0, 1).numpy().shape)
     save_img = np.float32(img.squeeze().clamp(0, 1).numpy())#[:,:,np.newaxis]
     # save img
     # get the folder name:
     folder = str(re.search('test/(.*)/', img_path[0]).group(1))
+    name = str(re.search('frame(.*).', img_path[0]).group(1))
 
     save_dir=os.path.join(opt.output, folder)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         
     if pred_flag:
-        save_fn = save_dir +'/'+ "frame"+img_name+'.png'
+        save_fn = save_dir +'/'+ "frame"+name+'.png'
     else:
-        save_fn = save_dir +'/'+ img_name+'.png'
+        save_fn = save_dir +'/'+ "frame"+name+'.png'
     final_img = cv2.cvtColor(save_img, cv2.COLOR_GRAY2BGR)
-    print(np.max(save_img*255))
+    # print(np.max(save_img*255))
     cv2.imwrite(save_fn,  save_img*255, [cv2.IMWRITE_PNG_COMPRESSION, 0])
 
 def PSNR(pred, gt, shave_border=0):
