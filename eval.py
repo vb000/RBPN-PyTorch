@@ -60,6 +60,8 @@ if opt.model_type == 'RBPN':
 
 if cuda:
     model = torch.nn.DataParallel(model, device_ids=gpus_list)
+else:
+    model = torch.nn.DataParallel(model)
 
 model.load_state_dict(torch.load(opt.model, map_location=lambda storage, loc: storage))
 print('Pre-trained SR model is loaded.')
