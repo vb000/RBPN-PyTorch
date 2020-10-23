@@ -77,10 +77,16 @@ def eval():
         input, target, neigbor, flow, bicubic = batch[0], batch[1], batch[2], batch[3], batch[4]
         
         with torch.no_grad():
-            input = Variable(input).cuda(gpus_list[0])
-            bicubic = Variable(bicubic).cuda(gpus_list[0])
-            neigbor = [Variable(j).cuda(gpus_list[0]) for j in neigbor]
-            flow = [Variable(j).cuda(gpus_list[0]).float() for j in flow]
+            if cuda:
+                input = Variable(input).cuda(gpus_list[0])
+                bicubic = Variable(bicubic).cuda(gpus_list[0])
+                neigbor = [Variable(j).cuda(gpus_list[0]) for j in neigbor]
+                flow = [Variable(j).cuda(gpus_list[0]).float() for j in flow]
+            else:
+                input = Variable(input)
+                bicubic = Variable(bicubic)
+                neigbor = [Variable(j) for j in neigbor]
+                flow = [Variable(j).float() for j in flow]
 
         t0 = time.time()
         if opt.chop_forward:
