@@ -12,7 +12,6 @@ from data import get_test_set
 from functools import reduce
 import numpy as np
 
-from scipy.misc import imsave
 import scipy.io as sio
 import time
 import cv2
@@ -23,7 +22,7 @@ import pdb
 parser = argparse.ArgumentParser(description='PyTorch Super Res Example')
 parser.add_argument('--upscale_factor', type=int, default=4, help="super resolution upscale factor")
 parser.add_argument('--testBatchSize', type=int, default=1, help='testing batch size')
-parser.add_argument('--gpu_mode', type=bool, default=True)
+parser.add_argument('--gpu_mode', type=bool, default=False)
 parser.add_argument('--chop_forward', type=bool, default=False)
 parser.add_argument('--threads', type=int, default=1, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
