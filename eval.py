@@ -78,7 +78,7 @@ def eval():
             input = Variable(input).cuda(gpus_list[0])
             bicubic = Variable(bicubic).cuda(gpus_list[0])
             neigbor = [Variable(j).cuda(gpus_list[0]) for j in neigbor]
-            flow = [Variable(j).cuda(gpus_list[0]) for j in flow]
+            flow = [Variable(j.to(torch.float32)).cuda(gpus_list[0]) for j in flow]
 
         t0 = time.time()
         if opt.chop_forward:
