@@ -12,7 +12,6 @@ from data import get_test_set
 from functools import reduce
 import numpy as np
 
-from scipy.misc import imsave
 import scipy.io as sio
 import time
 import cv2
